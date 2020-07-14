@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>首页</title>
+    <script type="text/javascript" src="../static/js/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue"></script>
+    <!-- 引入样式 -->
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <!-- 引入组件库 -->
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <link rel="stylesheet" href="../static/css/index.css">
+</head>
+<body>
+<div id="app">
+    <div id="controller">
+        <div id="env">
+            <el-button type="primary" @click="setup">启动环境</el-button>
+            <el-button type="danger" @click="clean">清理环境</el-button>
+            <el-button type="primary" @click="getStatus">刷新</el-button>
+        </div>
+        <div id="cc">
+            <el-button type="primary" @click="ccInstallDialogVisible = true">安装链码</el-button>
+            <el-button type="primary" @click="ccInstantiateDialogVisible = true">实例化链码</el-button>
+            <el-button type="primary" @click="ccInvokeDialogVisible = true">调用链码</el-button>
+        </div>
+    </div>
+    <div id="containers">
+        <el-table
+                :data="containers"
+                style="width: 50%">
+            <el-table-column
+                    prop="container_name"
+                    label="容器名称"
+                    width="200">
+            </el-table-column>
+            <el-table-column
+                    prop="image"
+                    label="镜像"
+                    width="280">
+            </el-table-column>
+            <el-table-column
+                    prop="healthy"
+                    label="运行状态">
+            </el-table-column>
+        </el-table>
+    </div>
+    <div>
+        <code>${log}</code>
+    </div>
+
+    <el-dialog
+            title="安装链码"
+            :visible.sync="ccInstallDialogVisible"
+            width="30%">
+        <el-form :model="cc" label-width="80px">
+            <el-form-item label="链码名">
+                <el-input v-model="cc.name"></el-input>
+            </el-form-item>
+            <el-form-item label="链码版本">
+                <el-input v-model="cc.version"></el-input>
+            </el-form-item>
+        </el-form>
+        <span slot="footer" class="dialog-footer">
+            <el-button @click="ccInstallDialogVisible = false">取 消</el-button>
+            <el-button type="primary" @click="ccInstall">安装</el-button>
+        </span>
+    </el-dialog>
+
+    <el-dialog
+            title="实例化链码"
+            :visible.sync="ccInstantiateDialogVisible"
+            width="30%">
+        <el-form :model="cc" label-width="80px">
+            <el-form-item label="链码名">
+                <el-input v-model="cc.name"></el-input>
+            </el-form-item>
+            <el-form-item label="链码版本">
+                <el-input v-model="cc.version"></el-input>
+            </el-form-item>
+        </el-form>
+        <span slot="footer" class="dialog-footer">
+            <el-button @click="ccInstantiateDialogVisible = false">取 消</el-button>
+            <el-button type="primary" @click="ccInstantiate">实例化</el-button>
+        </span>
+    </el-dialog>
+
+    <el-dialog
+            title="调用链码"
+            :visible.sync="ccInvokeDialogVisible"
+            width="30%">
+        <el-form :model="cc" label-width="80px">
+            <el-form-item label="链码名">
+                <el-input v-model="cc.name"></el-input>
+            </el-form-item>
+            <el-form-item label="链码方法名">
+                <el-input v-model="cc.function_name"></el-input>
+            </el-form-item>
+        </el-form>
+        <span slot="footer" class="dialog-footer">
+            <el-button @click="ccInvokeDialogVisible = false">取 消</el-button>
+            <el-button type="primary" @click="ccInvoke">调用</el-button>
+        </span>
+    </el-dialog>
+</div>
+</body>
+
+<style>
+    #app {
+        margin: 50px;
+    }
+
+    #controller {
+        margin: 20px;
+    }
+
+    #controller div {
+        margin: 20px;
+    }
+
+    #containers {
+        margin: 20px;
+    }
+</style>
+
+<script>
+    var vue = new Vue({
+        el: '#app',
+        delimiters: ['${', '}'],
+        data: {
+            activeName: 'second',
+            containers: [],
+            ccInstallDialogVisible: false,
+            ccInstantiateDialogVisible: false,
+            ccInvokeDialogVisible: false,
+            cc: {},
+            log: null
+        },
+        created() {
+            this.getStatus()
+        },
+        methods: {
+            setup() {
+                var that = this;
+                $.ajax({
+                    url: "/setup",
+                    type: "get",
+                    error: function (e) {
+                        console.log(e);
+                        that.$message.error(e);
+                    },
+                    success: function (response) {
+                        console.log(response.data);
+                        that.containers = response.data
+                    }
+                });
+            },
+            getStatus() {
+                var that = this;
+                $.ajax({
+                    url: "/status",
+                    type: "get",
+                    error: function (e) {
+                        console.log(e);
+                        that.$message.error(e);
+                    },
+                    success: function (response) {
+                        console.log(response.data);
+                        that.containers = response.data
+                    }
+                });
+            },
+            clean() {
+                $.ajax({
+                    url: "/clean",
+                    type: "get",
+                    error: function (e) {
+                        console.log(e);
+                        that.$message.error(e);
+                    },
+                    success: function (response) {
+                        console.log(response);
+                    }
+                });
+            },
+            ccInstall() {
+                console.log(this.cc);
+                var obj = {
+                    name: this.cc.name,
+                    version: this.cc.version,
+                };
+                var that = this;
+                $.ajax({
+                    url: "/chaincode/install",
+                    type: "post",
+                    contentType: "application/json;charset=utf-8",
+                    data: JSON.stringify(obj),
+                    error: function (e) {
+                        console.log(e);
+                        that.$message.error(e);
+                    },
+                    success: function (response) {
+                        that.log = response.data.log
+                    }
+                });
+                this.ccInstallDialogVisible = false
+            },
+            ccInstantiate() {
+                var obj = {
+                    name: this.cc.name,
+                    version: this.cc.version,
+                    args: ["a", "100", "b", "200"],
+                };
+                var that = this;
+                $.ajax({
+                    url: "/chaincode/instantiate",
+                    type: "post",
+                    contentType: "application/json;charset=utf-8",
+                    data: JSON.stringify(obj),
+                    error: function (e) {
+                        console.log(e);
+                        that.$message.error(e);
+                    },
+                    success: function (response) {
+                        that.log = response.data.log
+                    }
+                });
+                this.ccInstantiateDialogVisible = false
+            },
+            ccInvoke() {
+                var obj = {
+                    name: this.cc.name,
+                    function_name: this.cc.function_name,
+                    args: ["a"],
+                };
+                var that = this;
+                $.ajax({
+                    url: "/chaincode/invoke",
+                    type: "post",
+                    contentType: "application/json;charset=utf-8",
+                    data: JSON.stringify(obj),
+                    error: function (e) {
+                        console.log(e);
+                        that.$message.error(e);
+                    },
+                    success: function (response) {
+                        that.log = response.data.response
+                    }
+                });
+                this.ccInvokeDialogVisible = false
+            }
+        }
+    })
+</script>
+</html>
