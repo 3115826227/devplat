@@ -8,11 +8,16 @@ import (
 
 func SetupPlatHandle(c *gin.Context) {
 	service.GetDevPlatController().Setup()
-	SuccessResp(c, "", service.GetDevPlatController().GetContainers())
+	status, containers := service.GetDevPlatController().GetContainers()
+	SuccessResp(c, "", gin.H{
+		"status":     status,
+		"containers": containers,
+	})
 }
 
 func CleanPlatHandle(c *gin.Context) {
 	service.GetDevPlatController().Clean()
+	GetChaincodeProvider().Clean()
 	c.JSON(http.StatusOK, gin.H{
 		"code": 0,
 		"msg":  "清理成功",
@@ -20,5 +25,9 @@ func CleanPlatHandle(c *gin.Context) {
 }
 
 func GetStatusHandle(c *gin.Context) {
-	SuccessResp(c, "", service.GetDevPlatController().GetContainers())
+	status, containers := service.GetDevPlatController().GetContainers()
+	SuccessResp(c, "", gin.H{
+		"status":     status,
+		"containers": containers,
+	})
 }

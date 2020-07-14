@@ -47,6 +47,24 @@ type ContainerManager struct {
 	networkConfig *network.NetworkingConfig
 }
 
+type Managers []ContainerManager
+
+func (managers Managers) Len() int {
+	return len(managers)
+}
+
+func (managers Managers) Swap(i, j int) {
+	managers[i], managers[j] = managers[j], managers[i]
+}
+
+func (managers Managers) Less(i, j int) bool {
+	return managers[i].ContainerName < managers[j].ContainerName
+}
+
+func (manager *ContainerManager) Less(i, j int) {
+
+}
+
 /*
 	添加参数
 */

@@ -1,6 +1,9 @@
 package service
 
-import "devplat/src/service/docker"
+import (
+	"devplat/src/service/docker"
+	"sort"
+)
 
 var controller *DevPlatController
 
@@ -52,12 +55,17 @@ func (controller *DevPlatController) checkHealthy() {
 /*
 	查看容器
 */
-func (controller *DevPlatController) GetContainers() (containers []docker.ContainerManager) {
-	controller.checkHealthy()
+func (controller *DevPlatController) GetContainers() (status bool, containers []docker.ContainerManager) {
 	containers = make([]docker.ContainerManager, 0)
+	status = controller.status
+	if !status {
+		return
+	}
+	controller.checkHealthy()
 	for _, manager := range controller.containers {
 		containers = append(containers, manager.GetStatus())
 	}
+	sort.Sort(docker.Managers(containers))
 	return
 }
 

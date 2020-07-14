@@ -17,7 +17,7 @@ func initChaincodeManager() {
 			"GOPATH=/opt/gopath",
 			"CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock",
 			"FABRIC_LOGGING_SPEC=DEBUG",
-			"CORE_PEER_ID=example02",
+			"CORE_PEER_ID=example_cc",
 			fmt.Sprintf("CORE_PEER_ADDRESS=%s:7051", peerName),
 			"CORE_PEER_LOCALMSPID=DEFAULT",
 			"CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/msp",

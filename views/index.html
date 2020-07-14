@@ -4,123 +4,239 @@
     <meta charset="UTF-8">
     <title>首页</title>
     <script type="text/javascript" src="../static/js/jquery.min.js"></script>
+    {{/*    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">*/}}
+    <link rel="stylesheet" href="../static/element-ui/index.css">
     <script src="https://cdn.jsdelivr.net/npm/vue"></script>
-    <!-- 引入样式 -->
-    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
-    <!-- 引入组件库 -->
-    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
     <link rel="stylesheet" href="../static/css/index.css">
+    <script type="text/javascript" src="../static/element-ui/index.js"></script>
 </head>
 <body>
 <div id="app">
-    <div id="controller">
-        <div id="env">
-            <el-button type="primary" @click="setup">启动环境</el-button>
-            <el-button type="danger" @click="clean">清理环境</el-button>
-            <el-button type="primary" @click="getStatus">刷新</el-button>
+    <el-header id="header">
+        <label class="title">本地链码开发工具</label>
+    </el-header>
+    <div id="container">
+        <div id="list">
+            <el-menu :default-active="activeIndex" class="el-menu-vertical-demo" @select="handleSelect">
+                <el-menu-item index="1">环境管理</el-menu-item>
+                <el-submenu index="2">
+                    <template slot="title">链码管理</template>
+                    <el-menu-item index="2-1">链码安装</el-menu-item>
+                    <el-menu-item index="2-2">链码实例化</el-menu-item>
+                    <el-menu-item index="2-3">链码调用</el-menu-item>
+                </el-submenu>
+            </el-menu>
         </div>
-        <div id="cc">
-            <el-button type="primary" @click="ccInstallDialogVisible = true">安装链码</el-button>
-            <el-button type="primary" @click="ccInstantiateDialogVisible = true">实例化链码</el-button>
-            <el-button type="primary" @click="ccInvokeDialogVisible = true">调用链码</el-button>
+        <div id="content" v-loading="loading" :element-loading-text="loading_text">
+            <div v-if="activeIndex == '1'">
+                <div id="env" style="margin-bottom: 20px;">
+                    <el-button type="primary" @click="setup">启动环境</el-button>
+                    <el-button type="danger" @click="clean">清理环境</el-button>
+                    <el-button type="primary" @click="getStatus">刷新</el-button>
+                    <span style="margin-left: 20px">
+                        当前状态:
+                        <span v-if="status == false" style="color: #f56c6c">未启动环境</span>
+                        <span v-else style="color: #67c23a">环境已启动</span>
+                    </span>
+                </div>
+                <div id="containers" v-if="containers.length">
+                    <el-table :data="containers">
+                        <el-table-column prop="container_name" label="容器名称" width="160">
+                        </el-table-column>
+                        <el-table-column prop="image" label="镜像" width="280">
+                        </el-table-column>
+                        <el-table-column prop="healthy" label="运行状态">
+                            <template slot-scope="scope">
+                                <div v-if="scope.row.healthy">
+                                    <i class="status-success"></i>
+                                </div>
+                                <div v-else>
+                                    <i class="status-failed"></i>
+                                </div>
+                            </template>
+                        </el-table-column>
+                    </el-table>
+                </div>
+            </div>
+            <div v-else-if="activeIndex == '2-1'">
+                <el-form :model="cc" label-width="80px">
+                    <el-form-item label="链码名">
+                        <el-col :span="8">
+                            <el-input v-model="cc.name"></el-input>
+                        </el-col>
+                    </el-form-item>
+                    <el-form-item label="链码版本">
+                        <el-col :span="8">
+                            <el-input v-model="cc.version"></el-input>
+                        </el-col>
+                    </el-form-item>
+                    <el-form-item label="">
+                        <el-button type="primary" @click="ccInstall">安装</el-button>
+                        <span style="margin-left: 20px">
+                            <el-button type="info" @click="dialogVisible = true">查看日志</el-button>
+                        </span>
+                        <span style="margin-left: 20px">
+                            <el-button type="primary" @click="ccInstallFeedback">已安装成功</el-button>
+                        </span>
+                    </el-form-item>
+                </el-form>
+            </div>
+            <div v-else-if="activeIndex == '2-2'">
+                <el-form :model="instantiateForm" label-width="150px">
+                    <el-form-item label="选择已安装链码：">
+                        <el-col :span="8">
+                            <el-select v-model="instantiateForm.chaincode" placeholder="选择已安装链码">
+                                <el-option v-for="item in ccInstalled" :key="item.name" :label="item.name"
+                                           :value="item"></el-option>
+                            </el-select>
+                        </el-col>
+                    </el-form-item>
+                    <el-form-item v-for="(param, index) in instantiateForm.params"
+                                  :label="'参数：' + index" :key="param.key"
+                    >
+                        <el-col :span="8">
+                            <span v-if="param.canModify">
+                                <el-input v-model="param.value"/>
+                            </span>
+                            <span v-else>
+                                <label>${param.value}</label>
+                            </span>
+                        </el-col>
+                        <el-col :span="5" v-if="param.canModify" style="margin-left: 20px">
+                            <el-select v-model="param.type" placeholder="参数类型">
+                                <el-option label="string" value="string"></el-option>
+                                <el-option label="json" value="json"></el-option>
+                            </el-select>
+                        </el-col>
+                        <el-col :span="8" v-if="param.canModify" style="margin-left: 10px">
+                            <el-button type="danger" @click="removeInstantiateFormParam(param)">删除</el-button>
+                        </el-col>
+                    </el-form-item>
+                    <el-form-item label="">
+                        <el-button type="primary" @click="addInstantiateFormParam">新增参数</el-button>
+                        <el-button type="primary" @click="ccInstantiate">实例化</el-button>
+                        <span style="margin-left: 20px">
+                            <el-button type="info" @click="dialogVisible = true">查看日志</el-button>
+                        </span>
+                        <span style="margin-left: 20px">
+                            <el-button type="primary" @click="ccInstantiateFeedback">已实例化成功</el-button>
+                        </span>
+                    </el-form-item>
+                </el-form>
+            </div>
+            <div v-else-if="activeIndex == '2-3'">
+                <el-form :model="invokeForm" label-width="150px">
+                    <el-form-item label="选择已实例化链码：">
+                        <el-col :span="8">
+                            <el-select v-model="invokeForm.chaincode" placeholder="选择已实例化链码">
+                                <el-option v-for="item in ccInstantiated" :key="item.name" :label="item.name"
+                                           :value="item"></el-option>
+                            </el-select>
+                        </el-col>
+                    </el-form-item>
+                    <el-form-item label="链码方法名：">
+                        <el-col :span="8">
+                            <el-input v-model="invokeForm.function_name"></el-input>
+                        </el-col>
+                    </el-form-item>
+                    <el-form-item v-for="(param, index) in invokeForm.params"
+                                  :label="'参数：' + index" :key="param.key"
+                    >
+                        <el-col :span="8">
+                            <span v-if="param.canModify">
+                                <el-input v-model="param.value"/>
+                            </span>
+                            <span v-else>
+                                <label>${param.value}</label>
+                            </span>
+                        </el-col>
+                        <el-col :span="5" v-if="param.canModify" style="margin-left: 20px">
+                            <el-select v-model="param.type" placeholder="参数类型">
+                                <el-option label="string" value="string"></el-option>
+                                <el-option label="json" value="json"></el-option>
+                            </el-select>
+                        </el-col>
+                        <el-col :span="8" v-if="param.canModify" style="margin-left: 10px">
+                            <el-button type="danger" @click="removeInvokeFormParam(param)">删除</el-button>
+                        </el-col>
+                    </el-form-item>
+                    <el-form-item label="">
+                        <el-button type="primary" @click="addInvokeFormParam">新增参数</el-button>
+                        <el-button type="primary" @click="ccInvoke">调用</el-button>
+                        <span style="margin-left: 20px">
+                            <el-button type="info" @click="dialogVisible = true">查看日志</el-button>
+                        </span>
+                    </el-form-item>
+                </el-form>
+            </div>
         </div>
     </div>
-    <div id="containers">
-        <el-table
-                :data="containers"
-                style="width: 50%">
-            <el-table-column
-                    prop="container_name"
-                    label="容器名称"
-                    width="200">
-            </el-table-column>
-            <el-table-column
-                    prop="image"
-                    label="镜像"
-                    width="280">
-            </el-table-column>
-            <el-table-column
-                    prop="healthy"
-                    label="运行状态">
-            </el-table-column>
-        </el-table>
-    </div>
-    <div>
-        <code>${log}</code>
-    </div>
 
     <el-dialog
-            title="安装链码"
-            :visible.sync="ccInstallDialogVisible"
-            width="30%">
-        <el-form :model="cc" label-width="80px">
-            <el-form-item label="链码名">
-                <el-input v-model="cc.name"></el-input>
-            </el-form-item>
-            <el-form-item label="链码版本">
-                <el-input v-model="cc.version"></el-input>
-            </el-form-item>
-        </el-form>
+            title="日志"
+            :visible.sync="dialogVisible"
+            width="80%">
+        <div class="log">
+            <pre><code>${log}</code></pre>
+        </div>
         <span slot="footer" class="dialog-footer">
-            <el-button @click="ccInstallDialogVisible = false">取 消</el-button>
-            <el-button type="primary" @click="ccInstall">安装</el-button>
-        </span>
-    </el-dialog>
-
-    <el-dialog
-            title="实例化链码"
-            :visible.sync="ccInstantiateDialogVisible"
-            width="30%">
-        <el-form :model="cc" label-width="80px">
-            <el-form-item label="链码名">
-                <el-input v-model="cc.name"></el-input>
-            </el-form-item>
-            <el-form-item label="链码版本">
-                <el-input v-model="cc.version"></el-input>
-            </el-form-item>
-        </el-form>
-        <span slot="footer" class="dialog-footer">
-            <el-button @click="ccInstantiateDialogVisible = false">取 消</el-button>
-            <el-button type="primary" @click="ccInstantiate">实例化</el-button>
-        </span>
-    </el-dialog>
-
-    <el-dialog
-            title="调用链码"
-            :visible.sync="ccInvokeDialogVisible"
-            width="30%">
-        <el-form :model="cc" label-width="80px">
-            <el-form-item label="链码名">
-                <el-input v-model="cc.name"></el-input>
-            </el-form-item>
-            <el-form-item label="链码方法名">
-                <el-input v-model="cc.function_name"></el-input>
-            </el-form-item>
-        </el-form>
-        <span slot="footer" class="dialog-footer">
-            <el-button @click="ccInvokeDialogVisible = false">取 消</el-button>
-            <el-button type="primary" @click="ccInvoke">调用</el-button>
+         <el-button type="primary" @click="dialogVisible = false">关闭</el-button>
         </span>
     </el-dialog>
 </div>
 </body>
-
 <style>
-    #app {
-        margin: 50px;
+    #header {
+        background-color: #1a1b20 !important;
+        color: #fff;
+        height: 30px;
+        padding-top: 15px;
     }
 
-    #controller {
-        margin: 20px;
+    .title {
+        color: white;
+        font-size: 20px;
     }
 
-    #controller div {
-        margin: 20px;
+    #container {
+        float: left;
+        width: 1200px;
     }
 
-    #containers {
-        margin: 20px;
+    #list {
+        float: left;
+        width: 270px;
     }
+
+    #content {
+        float: left;
+        margin: 20px;
+        width: 700px;
+    }
+
+    .status-success {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        background: #f0f9eb;
+        border-radius: 50%;
+        border: 1px solid #67c23a;
+    }
+
+    .status-failed {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        background: #fef0f0;
+        border-radius: 50%;
+        border: 1px solid #f56c6c;
+    }
+
+    .log {
+        margin: 0 40px;
+        overflow: auto;
+    }
+
 </style>
 
 <script>
@@ -128,19 +244,47 @@
         el: '#app',
         delimiters: ['${', '}'],
         data: {
-            activeName: 'second',
+            activeIndex: "",
+            status: false,
             containers: [],
-            ccInstallDialogVisible: false,
-            ccInstantiateDialogVisible: false,
-            ccInvokeDialogVisible: false,
             cc: {},
-            log: null
+            ccInstalled: [],
+            ccInstantiated: [],
+            ccs: [{
+                name: "dev_chaincode",
+            }],
+            log: null,
+            loading: false,
+            loading_text: "",
+            dialogVisible: false,
+            instantiateForm: {
+                params: [],
+            },
+            invokeForm: {
+                params: [],
+            },
         },
         created() {
-            this.getStatus()
+            this.getActiveIndex();
+            this.getStatus();
+            this.ccGet();
         },
         methods: {
+            getActiveIndex() {
+                this.activeIndex = localStorage.getItem("active_index")
+            },
+            handleSelect(key) {
+                localStorage.setItem("active_index", key);
+                this.activeIndex = key
+            },
             setup() {
+                this.getStatus();
+                if (this.status) {
+                    this.$message.info('环境已启动');
+                    return
+                }
+                this.loading = true;
+                this.loading_text = '环境正在拼命启动中，请稍后';
                 var that = this;
                 $.ajax({
                     url: "/setup",
@@ -151,7 +295,11 @@
                     },
                     success: function (response) {
                         console.log(response.data);
-                        that.containers = response.data
+                        that.status = response.data.status;
+                        that.containers = response.data.containers;
+                        that.loading = false;
+                        that.loading_text = '';
+                        that.$message.success('环境启动成功');
                     }
                 });
             },
@@ -166,11 +314,20 @@
                     },
                     success: function (response) {
                         console.log(response.data);
-                        that.containers = response.data
+                        that.status = response.data.status;
+                        that.containers = response.data.containers
                     }
                 });
             },
             clean() {
+                this.getStatus();
+                if (!this.status) {
+                    this.$message.info('环境已清理');
+                    return
+                }
+                this.loading = true;
+                this.loading_text = '环境正在拼命清理中，请稍后';
+                var that = this;
                 $.ajax({
                     url: "/clean",
                     type: "get",
@@ -180,11 +337,37 @@
                     },
                     success: function (response) {
                         console.log(response);
+                        that.getStatus();
+                        that.loading = false;
+                        that.loading_text = '';
+                        that.$message.success('环境清理成功');
+                    }
+                });
+            },
+            ccGet() {
+                var that = this;
+                $.ajax({
+                    url: "/chaincode",
+                    type: "get",
+                    error: function (e) {
+                        console.log(e);
+                        that.$message.error(e);
+                    },
+                    success: function (response) {
+                        that.ccs = response.data;
+                        that.ccInstalled = [];
+                        that.ccInstantiated = [];
+                        for (let i = 0; i < that.ccs.length; i++) {
+                            if (that.ccs[i].state === 0) {
+                                that.ccInstalled.push(that.ccs[i])
+                            } else {
+                                that.ccInstantiated.push(that.ccs[i])
+                            }
+                        }
                     }
                 });
             },
             ccInstall() {
-                console.log(this.cc);
                 var obj = {
                     name: this.cc.name,
                     version: this.cc.version,
@@ -200,16 +383,57 @@
                         that.$message.error(e);
                     },
                     success: function (response) {
-                        that.log = response.data.log
+                        that.log = response.data.log;
+                        that.$message.success("链码" + obj.name + "安装结束")
                     }
                 });
-                this.ccInstallDialogVisible = false
             },
-            ccInstantiate() {
+            ccInstallFeedback() {
                 var obj = {
                     name: this.cc.name,
                     version: this.cc.version,
-                    args: ["a", "100", "b", "200"],
+                };
+                var that = this;
+                $.ajax({
+                    url: "/chaincode/install/feedback",
+                    type: "post",
+                    contentType: "application/json;charset=utf-8",
+                    data: JSON.stringify(obj),
+                    error: function (e) {
+                        console.log(e);
+                        that.$message.error(e);
+                    },
+                    success: function (response) {
+                        that.ccGet()
+                    }
+                });
+            },
+            addInstantiateFormParam() {
+                this.instantiateForm.params.push({
+                    key: Date.now(),
+                    type: 'string',
+                    canModify: true,
+                })
+            },
+            removeInstantiateFormParam(item) {
+                var index = this.instantiateForm.params.indexOf(item)
+                if (index !== -1) {
+                    this.instantiateForm.params.splice(index, 1)
+                }
+            },
+            ccInstantiate() {
+                if (this.instantiateForm.chaincode === null || this.instantiateForm.chaincode === undefined) {
+                    this.$message.warning('请选择一个已安装的链码进行实例化');
+                    return
+                }
+                var args = [];
+                for (let i = 0; i < this.instantiateForm.params.length; i++) {
+                    args.push(this.instantiateForm.params[i].value)
+                }
+                var obj = {
+                    name: this.instantiateForm.chaincode.name,
+                    version: this.instantiateForm.chaincode.version,
+                    args: args,
                 };
                 var that = this;
                 $.ajax({
@@ -222,16 +446,53 @@
                         that.$message.error(e);
                     },
                     success: function (response) {
-                        that.log = response.data.log
+                        that.log = response.data.log;
+                        that.$message.success("链码" + obj.name + "实例化结束")
                     }
                 });
-                this.ccInstantiateDialogVisible = false
+            },
+            ccInstantiateFeedback() {
+                var obj = {
+                    name: this.instantiateForm.chaincode.name,
+                    version: this.instantiateForm.chaincode.version,
+                };
+                var that = this;
+                $.ajax({
+                    url: "/chaincode/instantiate/feedback",
+                    type: "post",
+                    contentType: "application/json;charset=utf-8",
+                    data: JSON.stringify(obj),
+                    error: function (e) {
+                        console.log(e);
+                        that.$message.error(e);
+                    },
+                    success: function (response) {
+                        that.ccGet()
+                    }
+                });
+            },
+            addInvokeFormParam() {
+                this.invokeForm.params.push({
+                    key: Date.now(),
+                    type: 'string',
+                    canModify: true,
+                })
+            },
+            removeInvokeFormParam(item) {
+                var index = this.invokeForm.params.indexOf(item);
+                if (index !== -1) {
+                    this.invokeForm.params.splice(index, 1)
+                }
             },
             ccInvoke() {
+                var args = [];
+                for (let i = 0; i < this.invokeForm.params.length; i++) {
+                    args.push(this.invokeForm.params[i].value)
+                }
                 var obj = {
-                    name: this.cc.name,
-                    function_name: this.cc.function_name,
-                    args: ["a"],
+                    name: this.invokeForm.chaincode.name,
+                    function_name: this.invokeForm.function_name,
+                    args: args,
                 };
                 var that = this;
                 $.ajax({
@@ -244,10 +505,10 @@
                         that.$message.error(e);
                     },
                     success: function (response) {
-                        that.log = response.data.response
+                        that.log = response.data.response;
+                        that.$message.success("链码" + obj.name + "调用成功")
                     }
                 });
-                this.ccInvokeDialogVisible = false
             }
         }
     })
