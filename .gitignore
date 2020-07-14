@@ -1,0 +1,4 @@
+.idea/
+main
+deploy/chaincode/*
+vendor/
