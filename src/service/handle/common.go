@@ -1,8 +1,13 @@
 package handle
 
 import (
+	"devplat/src/log"
+	"encoding/json"
+	"errors"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"strings"
 )
 
 const (
@@ -19,4 +24,22 @@ func ErrorResp(c *gin.Context, message string) {
 		"ret_msg":  message,
 		"data":     struct{}{},
 	})
+}
+
+func ArgsHandle(args []interface{}) (argsStr string, err error) {
+	for _, arg := range args {
+		switch arg.(type) {
+		case string:
+			argsStr = fmt.Sprintf(`%v,"%v"`, argsStr, arg)
+		case map[string]interface{}:
+			data, _ := json.Marshal(arg)
+			newData := strings.Replace(string(data), `"`, `\"`, len(string(data)))
+			argsStr = fmt.Sprintf(`%v,"%v"`, argsStr, newData)
+		default:
+			err = errors.New("参数类型错误")
+			log.Logger.Error(err.Error())
+			return
+		}
+	}
+	return
 }

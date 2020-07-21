@@ -3,6 +3,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 set -e
+
+sleep 5
 # This script expedites the chaincode development process by automating the
 # requisite channel create/join commands
 

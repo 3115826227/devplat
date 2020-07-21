@@ -1,0 +1,10 @@
+releasemode: false
+chaincodepath: ./chaincode
+sdkcfgpath: etc/sdk.yaml
+orgname: Org1
+username: Admin
+channelname: mychannel
+peers:
+  - peer0.org1.example.com
+orderer:
+  - orderer.example.com

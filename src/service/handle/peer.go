@@ -3,61 +3,40 @@ package handle
 import (
 	"devplat/src/log"
 	"devplat/src/service"
-	"encoding/json"
+	"devplat/src/service/app"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"strings"
 )
 
-type ChaincodeState uint
-
-const (
-	Installed ChaincodeState = iota
-	Instantiated
-)
-
-var (
-	chaincodeProvider *ChaincodeProvider
-)
-
-func InitChaincodeProvider() {
-	chaincodeProvider = &ChaincodeProvider{
-		chaincodes: make([]ChaincodeInfo, 0),
-	}
+//获取未安装链码项目
+func ChaincodeUninstallGetHandle(c *gin.Context) {
+	SuccessResp(c, "", app.GetChaincodeProvider().GetUninstallChaincode())
 }
 
-type ChaincodeProvider struct {
-	chaincodes []ChaincodeInfo `json:"chaincodes"`
+//获取已安装未实例化链码
+func ChaincodeInstalledGetHandle(c *gin.Context) {
+	SuccessResp(c, "", app.GetChaincodeProvider().GetInstalledChaincodes())
 }
 
-func GetChaincodeProvider() *ChaincodeProvider {
-	return chaincodeProvider
+//获取已安装链码
+func ChaincodeInstantiatedGetHandle(c *gin.Context) {
+	SuccessResp(c, "", app.GetChaincodeProvider().GetInstantiatedChaincode())
 }
 
-func (provider *ChaincodeProvider) Clean() {
-	chaincodeProvider.chaincodes = make([]ChaincodeInfo, 0)
-}
-
-type ChaincodeInfo struct {
-	State   ChaincodeState `json:"state"`
-	Name    string         `json:"name"`
-	Version string         `json:"version"`
-}
-
-func ChaincodeGetHandle(c *gin.Context) {
-	SuccessResp(c, "", chaincodeProvider.chaincodes)
-}
-
-type ChaincodeInstallReq struct {
+type ChaincodeReq struct {
 	Name    string `json:"name" binding:"required"`
 	Version string `json:"version" binding:"required"`
 }
+
+type ChaincodeInstallReq ChaincodeReq
 
 type ChaincodeInstallRsp struct {
 	Result bool   `json:"result"`
 	Log    string `json:"log"`
 }
 
+//链码安装
 func ChaincodeInstallHandle(c *gin.Context) {
 	var req ChaincodeInstallReq
 	if err := c.BindJSON(&req); err != nil {
@@ -74,8 +53,9 @@ func ChaincodeInstallHandle(c *gin.Context) {
 	})
 }
 
-type ChaincodeInstallFeedbackReq ChaincodeInstallReq
+type ChaincodeInstallFeedbackReq ChaincodeReq
 
+// 链码安装反馈
 func ChaincodeInstallFeedbackHandle(c *gin.Context) {
 	var req ChaincodeInstallFeedbackReq
 	if err := c.BindJSON(&req); err != nil {
@@ -83,11 +63,12 @@ func ChaincodeInstallFeedbackHandle(c *gin.Context) {
 		ErrorResp(c, paramError)
 		return
 	}
-	chaincodeProvider.chaincodes = append(chaincodeProvider.chaincodes, ChaincodeInfo{
-		State:   Installed,
+	var chaincodeInfo = app.ChaincodeInfo{
 		Name:    req.Name,
 		Version: req.Version,
-	})
+	}
+	app.GetChaincodeProvider().ChaincodeInstallFeedback(chaincodeInfo)
+	SuccessResp(c, "", chaincodeInfo)
 }
 
 type ChaincodeInstantiateReq struct {
@@ -96,15 +77,7 @@ type ChaincodeInstantiateReq struct {
 	Args    []interface{} `json:"args"`
 }
 
-func chaincodeInstalledExist(req ChaincodeInstantiateReq) bool {
-	for _, chaincode := range chaincodeProvider.chaincodes {
-		if chaincode.Name == req.Name && chaincode.Version == req.Version && chaincode.State == Installed {
-			return true
-		}
-	}
-	return false
-}
-
+// 链码实例化
 func ChaincodeInstantiateHandle(c *gin.Context) {
 	var req ChaincodeInstantiateReq
 	if err := c.BindJSON(&req); err != nil {
@@ -112,23 +85,18 @@ func ChaincodeInstantiateHandle(c *gin.Context) {
 		ErrorResp(c, paramError)
 		return
 	}
-	if !chaincodeInstalledExist(req) {
+	var chaincodeInfo = app.ChaincodeInfo{
+		Name:    req.Name,
+		Version: req.Version,
+	}
+	if !app.GetChaincodeProvider().JudgeChaincodeInstalled(chaincodeInfo) {
 		ErrorResp(c, paramError)
 		return
 	}
-	var argsStr string
-	for _, arg := range req.Args {
-		switch arg.(type) {
-		case string:
-			argsStr = fmt.Sprintf(`%v,"%v"`, argsStr, arg)
-		case map[string]interface{}:
-			data, _ := json.Marshal(arg)
-			newData := strings.Replace(string(data), `"`, `\"`, len(string(data)))
-			argsStr = fmt.Sprintf(`%v,"%v"`, argsStr, newData)
-		default:
-			ErrorResp(c, paramError)
-			return
-		}
+	argsStr, err := ArgsHandle(req.Args)
+	if err != nil {
+		ErrorResp(c, paramError)
+		return
 	}
 	var cmdStr = fmt.Sprintf(`peer chaincode instantiate -n %s -v %s -c {"Args":["init"%v]} -C myc`,
 		req.Name, req.Version, argsStr)
@@ -142,6 +110,7 @@ func ChaincodeInstantiateHandle(c *gin.Context) {
 
 type ChaincodeInstantiateFeedbackReq ChaincodeInstallReq
 
+// 链码实例化反馈
 func ChaincodeInstantiateFeedbackHandle(c *gin.Context) {
 	var req ChaincodeInstantiateFeedbackReq
 	if err := c.BindJSON(&req); err != nil {
@@ -149,11 +118,12 @@ func ChaincodeInstantiateFeedbackHandle(c *gin.Context) {
 		ErrorResp(c, paramError)
 		return
 	}
-	for index, chaincode := range chaincodeProvider.chaincodes {
-		if chaincode.Name == req.Name && chaincode.Version == req.Version && chaincode.State == Installed {
-			chaincodeProvider.chaincodes[index].State = Instantiated
-		}
+	var chaincodeInfo = app.ChaincodeInfo{
+		Name:    req.Name,
+		Version: req.Version,
 	}
+	app.GetChaincodeProvider().ChaincodeInstantiateFeedback(chaincodeInfo)
+	SuccessResp(c, "", chaincodeInfo)
 }
 
 type ChaincodeInvokeReq struct {
@@ -167,6 +137,7 @@ type ChaincodeInvokeRsp struct {
 	Response string `json:"response"`
 }
 
+// 链码调用
 func ChaincodeInvokeHandle(c *gin.Context) {
 	var req ChaincodeInvokeReq
 	if err := c.BindJSON(&req); err != nil {
@@ -174,19 +145,14 @@ func ChaincodeInvokeHandle(c *gin.Context) {
 		ErrorResp(c, paramError)
 		return
 	}
-	var argsStr string
-	for _, arg := range req.Args {
-		switch arg.(type) {
-		case string:
-			argsStr = fmt.Sprintf(`%v,"%v"`, argsStr, arg)
-		case map[string]interface{}:
-			data, _ := json.Marshal(arg)
-			newData := strings.Replace(string(data), `"`, `\"`, len(string(data)))
-			argsStr = fmt.Sprintf(`%v,"%v"`, argsStr, newData)
-		default:
-			ErrorResp(c, paramError)
-			return
-		}
+	if !app.GetChaincodeProvider().JudgeChaincodeInstantiate(req.Name) {
+		ErrorResp(c, paramError)
+		return
+	}
+	argsStr, err := ArgsHandle(req.Args)
+	if err != nil {
+		ErrorResp(c, paramError)
+		return
 	}
 	var cmdStr = fmt.Sprintf(`peer chaincode invoke -n %s -c {"Args":["%v"%v]} -C myc`,
 		req.Name, req.FunctionName, argsStr)

@@ -3,12 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <title>首页</title>
-    <script type="text/javascript" src="../static/js/jquery.min.js"></script>
-    {{/*    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">*/}}
-    <link rel="stylesheet" href="../static/element-ui/index.css">
-    <script src="https://cdn.jsdelivr.net/npm/vue"></script>
-    <link rel="stylesheet" href="../static/css/index.css">
-    <script type="text/javascript" src="../static/element-ui/index.js"></script>
+    {{/*    <link rel="stylesheet" href="../static/element-ui/index.css">*/}}
+    <style>
+    </style>
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
 </head>
 <body>
 <div id="app">
@@ -59,13 +57,16 @@
                 </div>
             </div>
             <div v-else-if="activeIndex == '2-1'">
-                <el-form :model="cc" label-width="80px">
-                    <el-form-item label="链码名">
+                <el-form :model="cc" label-width="160px">
+                    <el-form-item label="选择项目安装链码：">
                         <el-col :span="8">
-                            <el-input v-model="cc.name"></el-input>
+                            <el-select v-model="cc.name" placeholder="选择项目">
+                                <el-option v-for="item in ccUninstall" :key="item.name" :label="item.name"
+                                           :value="item"></el-option>
+                            </el-select>
                         </el-col>
                     </el-form-item>
-                    <el-form-item label="链码版本">
+                    <el-form-item label="链码版本：">
                         <el-col :span="8">
                             <el-input v-model="cc.version"></el-input>
                         </el-col>
@@ -129,8 +130,8 @@
                     <el-form-item label="选择已实例化链码：">
                         <el-col :span="8">
                             <el-select v-model="invokeForm.chaincode" placeholder="选择已实例化链码">
-                                <el-option v-for="item in ccInstantiated" :key="item.name" :label="item.name"
-                                           :value="item"></el-option>
+                                <el-option v-for="(name, index) in ccInstantiated" :key="index" :label="name"
+                                           :value="name"></el-option>
                             </el-select>
                         </el-col>
                     </el-form-item>
@@ -185,6 +186,9 @@
     </el-dialog>
 </div>
 </body>
+<script type="text/javascript" src="../static/js/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vue"></script>
+<script src="../static/element-ui/index.js"></script>
 <style>
     #header {
         background-color: #1a1b20 !important;
@@ -248,11 +252,9 @@
             status: false,
             containers: [],
             cc: {},
+            ccUninstall: [],
             ccInstalled: [],
             ccInstantiated: [],
-            ccs: [{
-                name: "dev_chaincode",
-            }],
             log: null,
             loading: false,
             loading_text: "",
@@ -299,6 +301,7 @@
                         that.containers = response.data.containers;
                         that.loading = false;
                         that.loading_text = '';
+                        that.ccGet();
                         that.$message.success('环境启动成功');
                     }
                 });
@@ -340,32 +343,57 @@
                         that.getStatus();
                         that.loading = false;
                         that.loading_text = '';
+                        that.ccGet();
                         that.$message.success('环境清理成功');
                     }
                 });
             },
-            ccGet() {
+            ccUninstallGet() {
                 var that = this;
                 $.ajax({
-                    url: "/chaincode",
+                    url: "/chaincode/uninstall",
                     type: "get",
                     error: function (e) {
                         console.log(e);
                         that.$message.error(e);
                     },
                     success: function (response) {
-                        that.ccs = response.data;
-                        that.ccInstalled = [];
-                        that.ccInstantiated = [];
-                        for (let i = 0; i < that.ccs.length; i++) {
-                            if (that.ccs[i].state === 0) {
-                                that.ccInstalled.push(that.ccs[i])
-                            } else {
-                                that.ccInstantiated.push(that.ccs[i])
-                            }
-                        }
+                        that.ccUninstall = response.data;
                     }
                 });
+            },
+            ccInstalledGet() {
+                var that = this;
+                $.ajax({
+                    url: "/chaincode/installed",
+                    type: "get",
+                    error: function (e) {
+                        console.log(e);
+                        that.$message.error(e);
+                    },
+                    success: function (response) {
+                        that.ccInstalled = response.data;
+                    }
+                });
+            },
+            ccInstantiatedGet() {
+                var that = this;
+                $.ajax({
+                    url: "/chaincode/instantiated",
+                    type: "get",
+                    error: function (e) {
+                        console.log(e);
+                        that.$message.error(e);
+                    },
+                    success: function (response) {
+                        that.ccInstantiated = response.data;
+                    }
+                });
+            },
+            ccGet() {
+                this.ccUninstallGet();
+                this.ccInstalledGet();
+                this.ccInstantiatedGet();
             },
             ccInstall() {
                 var obj = {
@@ -404,7 +432,8 @@
                         that.$message.error(e);
                     },
                     success: function (response) {
-                        that.ccGet()
+                        that.ccGet();
+                        that.$message.success("链码" + obj.name + "安装成功")
                     }
                 });
             },
@@ -467,7 +496,8 @@
                         that.$message.error(e);
                     },
                     success: function (response) {
-                        that.ccGet()
+                        that.ccGet();
+                        that.$message.success("链码" + obj.name + "实例化成功")
                     }
                 });
             },
@@ -490,7 +520,7 @@
                     args.push(this.invokeForm.params[i].value)
                 }
                 var obj = {
-                    name: this.invokeForm.chaincode.name,
+                    name: this.invokeForm.chaincode,
                     function_name: this.invokeForm.function_name,
                     args: args,
                 };

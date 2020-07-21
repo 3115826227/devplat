@@ -5,6 +5,7 @@ import (
 	"devplat/src/config"
 	"devplat/src/log"
 	"devplat/src/service"
+	"devplat/src/service/app"
 	"devplat/src/service/handle"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -20,7 +21,7 @@ func init() {
 	//初始化Controller
 	service.InitDevPlatController()
 
-	handle.InitChaincodeProvider()
+	app.InitChaincodeProvider()
 }
 
 func IndexHandle(c *gin.Context) {

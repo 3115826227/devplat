@@ -2,6 +2,7 @@ package handle
 
 import (
 	"devplat/src/service"
+	"devplat/src/service/app"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -9,6 +10,7 @@ import (
 func SetupPlatHandle(c *gin.Context) {
 	service.GetDevPlatController().Setup()
 	status, containers := service.GetDevPlatController().GetContainers()
+	app.GetChaincodeProvider().Start()
 	SuccessResp(c, "", gin.H{
 		"status":     status,
 		"containers": containers,
@@ -17,7 +19,7 @@ func SetupPlatHandle(c *gin.Context) {
 
 func CleanPlatHandle(c *gin.Context) {
 	service.GetDevPlatController().Clean()
-	GetChaincodeProvider().Clean()
+	app.GetChaincodeProvider().Clean()
 	c.JSON(http.StatusOK, gin.H{
 		"code": 0,
 		"msg":  "清理成功",
