@@ -17,6 +17,10 @@ type ConfigStruct struct {
 	OrgName       string `env:"ORG_NAME" required:"true"`
 	UserName      string `env:"USER_NAME" required:"true"`
 
+	PeerImage    string            `env:"PEER_IMAGE" required:"true"`
+	OrdererImage string            `env:"ORDERER_IMAGE" required:"true"`
+	CcenvImage   string            `env:"CCENV_IMAGE" required:"true"`
+	CouchdbName  string            `env:"COUCHDB_IMAGE" required:"true"`
 	ChannelName  string            `env:"CHANNEL_NAME"`
 	Peers        []string          `env:"PEERS" required:"true"`
 	Orderer      []string          `env:"ORDERER" required:"true"`

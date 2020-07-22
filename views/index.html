@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>首页</title>
-    {{/*    <link rel="stylesheet" href="../static/element-ui/index.css">*/}}
+    {{/*        <link rel="stylesheet" href="../static/element-ui/index.css">*/}}
     <style>
     </style>
     <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
@@ -143,21 +143,26 @@
                     <el-form-item v-for="(param, index) in invokeForm.params"
                                   :label="'参数：' + index" :key="param.key"
                     >
-                        <el-col :span="8">
+                        <el-col :span="14">
                             <span v-if="param.canModify">
-                                <el-input v-model="param.value"/>
+                                <span v-if="param.type === 'string'">
+                                    <el-input v-model="param.value"/>
+                                </span>
+                                <span v-else="">
+                                   <el-input type="textarea" v-model="param.value" rows="15"/>
+                                </span>
                             </span>
                             <span v-else>
                                 <label>${param.value}</label>
                             </span>
                         </el-col>
-                        <el-col :span="5" v-if="param.canModify" style="margin-left: 20px">
+                        <el-col :span="4" v-if="param.canModify" style="margin-left: 20px">
                             <el-select v-model="param.type" placeholder="参数类型">
                                 <el-option label="string" value="string"></el-option>
                                 <el-option label="json" value="json"></el-option>
                             </el-select>
                         </el-col>
-                        <el-col :span="8" v-if="param.canModify" style="margin-left: 10px">
+                        <el-col :span="4" v-if="param.canModify" style="margin-left: 10px">
                             <el-button type="danger" @click="removeInvokeFormParam(param)">删除</el-button>
                         </el-col>
                     </el-form-item>
@@ -265,6 +270,9 @@
             invokeForm: {
                 params: [],
             },
+            json: {
+                hello: "1212"
+            }
         },
         created() {
             this.getActiveIndex();
@@ -400,6 +408,8 @@
                     name: this.cc.name,
                     version: this.cc.version,
                 };
+                this.loading = true;
+                this.loading_text = '链码正在安装，请稍后';
                 var that = this;
                 $.ajax({
                     url: "/chaincode/install",
@@ -412,6 +422,8 @@
                     },
                     success: function (response) {
                         that.log = response.data.log;
+                        that.loading = false;
+                        that.loading_text = '';
                         that.$message.success("链码" + obj.name + "安装结束")
                     }
                 });
@@ -464,6 +476,8 @@
                     version: this.instantiateForm.chaincode.version,
                     args: args,
                 };
+                this.loading = true;
+                this.loading_text = '链码正在实例化，请稍后';
                 var that = this;
                 $.ajax({
                     url: "/chaincode/instantiate",
@@ -476,6 +490,8 @@
                     },
                     success: function (response) {
                         that.log = response.data.log;
+                        that.loading = false;
+                        that.loading_text = '';
                         that.$message.success("链码" + obj.name + "实例化结束")
                     }
                 });

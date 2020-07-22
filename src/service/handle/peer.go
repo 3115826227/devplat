@@ -44,7 +44,7 @@ func ChaincodeInstallHandle(c *gin.Context) {
 		ErrorResp(c, paramError)
 		return
 	}
-	var cmdStr = fmt.Sprintf("peer chaincode install -p chaincodedev/chaincode/%v -n %s -v %s", req.Name, req.Name, req.Version)
+	var cmdStr = fmt.Sprintf("peer chaincode install -p %v -n %s -v %s", req.Name, req.Name, req.Version)
 	var cmd = strings.Split(cmdStr, " ")
 	content, ok := service.GetDockerManager().CliManager.Exec(cmd)
 	SuccessResp(c, "", ChaincodeInstallRsp{

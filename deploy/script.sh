@@ -5,6 +5,9 @@
 set -e
 
 sleep 5
+
+go env -w GO111MODULE=off
+#go env -w GOPROXY="https://goproxy.io, direct"
 # This script expedites the chaincode development process by automating the
 # requisite channel create/join commands
 

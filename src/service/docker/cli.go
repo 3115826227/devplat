@@ -24,13 +24,13 @@ func initCliManager() {
 		},
 		Cmd:           []string{"/bin/bash", "-c", "./script.sh"},
 		Image:         "hyperledger/fabric-tools:latest",
-		WorkingDir:    "/opt/gopath/src/chaincodedev",
+		WorkingDir:    "/opt/deploy",
 		ContainerName: conatainerName,
 		Volumes: []string{
 			config.WorkPath + "/deploy/msp:/etc/hyperledger/msp",
 			"/var/run:/host/var/run",
-			config.WorkPath + "/deploy/chaincode:/opt/gopath/src/chaincodedev/chaincode",
-			config.WorkPath + "/deploy:/opt/gopath/src/chaincodedev/",
+			config.WorkPath + "/deploy/chaincode:/opt/gopath/src/",
+			config.WorkPath + "/deploy:/opt/deploy",
 		},
 		Ports: map[string][]Port{},
 	}

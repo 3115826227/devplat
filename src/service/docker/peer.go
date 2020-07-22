@@ -10,6 +10,50 @@ type PeerManager ContainerManager
 
 var peerManager *PeerManager
 
+func NewPeerManager(orgName, containerName string, port int) *PeerManager {
+	return &PeerManager{
+		Env: []string{
+			//"CORE_LEDGER_STATE_STATEDATABASE=CouchDB",
+			//fmt.Sprintf("CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=%s:5984", couchdbName),
+			fmt.Sprintf("CORE_PEER_ID=%s", containerName),
+			fmt.Sprintf("CORE_PEER_ADDRESS=%s:%v", containerName, port),
+			fmt.Sprintf("CORE_PEER_GOSSIP_EXTERNALENDPOINT=%s:%v", containerName, port),
+			fmt.Sprintf("CORE_PEER_LOCALMSPID=%v", orgName),
+			"CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock",
+			"FABRIC_LOGGING_SPEC=DEBUG",
+			"CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/msp",
+		},
+		Cmd:           []string{"peer", "node", "start", "--peer-chaincodedev=true"},
+		Image:         config.Config.PeerImage,
+		WorkingDir:    "/opt/gopath/src/github.com/hyperledger/fabric/peer",
+		ContainerName: containerName,
+		Volumes: []string{
+			config.WorkPath + "/deploy/msp:/etc/hyperledger/msp",
+			"/var/run:/host/var/run",
+		},
+		Ports: map[string][]Port{
+			"7051": {
+				{
+					IP:   "0.0.0.0",
+					Port: "7051",
+				},
+			},
+			"7052": {
+				{
+					IP:   "0.0.0.0",
+					Port: "7052",
+				},
+			},
+			"7053": {
+				{
+					IP:   "0.0.0.0",
+					Port: "7053",
+				},
+			},
+		},
+	}
+}
+
 func initPeerManager() {
 	var conatainerName = peerName
 	peerManager = &PeerManager{

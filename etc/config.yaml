@@ -4,6 +4,10 @@ sdkcfgpath: etc/sdk.yaml
 orgname: Org1
 username: Admin
 channelname: mychannel
+peerimage: hyperledger/fabric-peer:latest
+ordererimage: hyperledger/fabric-orderer:latest
+ccenvimage: hyperledger/fabric-ccenv:latest
+couchdbimage: hyperledger/fabric-couchdb:latest
 peers:
   - peer0.org1.example.com
 orderer:

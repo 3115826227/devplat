@@ -30,7 +30,11 @@ func ArgsHandle(args []interface{}) (argsStr string, err error) {
 	for _, arg := range args {
 		switch arg.(type) {
 		case string:
-			argsStr = fmt.Sprintf(`%v,"%v"`, argsStr, arg)
+			var str = arg.(string)
+			str = strings.Replace(str, " ", "", -1)
+			str = strings.Replace(str, "\n", "", -1)
+			str = strings.Replace(str, "\"", "\\\"", -1)
+			argsStr = fmt.Sprintf(`%v,"%v"`, argsStr, str)
 		case map[string]interface{}:
 			data, _ := json.Marshal(arg)
 			newData := strings.Replace(string(data), `"`, `\"`, len(string(data)))

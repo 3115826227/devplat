@@ -7,6 +7,7 @@ import (
 	"devplat/src/service"
 	"devplat/src/service/app"
 	"devplat/src/service/handle"
+	"devplat/src/service/org"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"os"
@@ -28,7 +29,27 @@ func IndexHandle(c *gin.Context) {
 	c.HTML(http.StatusOK, "index.html", nil)
 }
 
+func newCrypto() {
+	var peers = make([]org.PeerNode, 0)
+	peers = append(peers, org.PeerNode{
+		Node: org.Node{
+			Address:       "0.0.0.0",
+			Port:          []int{7050},
+			EnableNodeOUs: true,
+			Name:          "",
+			Domain:        "",
+		},
+		TemplateCount: 0,
+		UserCount:     0,
+	})
+	var orderers = make([]org.OrdererNode, 0)
+	o := org.NewOrg("exampleOrg", peers, orderers)
+	org.NewOrgCrypto(*o)
+	return
+}
+
 func main() {
+
 	engine := gin.Default()
 
 	engine.Static("static", "static")

@@ -105,11 +105,11 @@ func write(filename string, data []byte) {
 	}
 }
 
-func GenerateConfig() {
-	data, err := yaml.Marshal(cryptoCfg)
+func GenerateConfig(fileName string, config CryptoConfig) {
+	data, err := yaml.Marshal(config)
 	if err != nil {
 		log.Logger.Error(err.Error())
 		return
 	}
-	write("crypto.yaml", data)
+	write(fileName, data)
 }
