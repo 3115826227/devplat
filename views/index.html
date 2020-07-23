@@ -95,21 +95,26 @@
                     <el-form-item v-for="(param, index) in instantiateForm.params"
                                   :label="'参数：' + index" :key="param.key"
                     >
-                        <el-col :span="8">
+                        <el-col :span="14">
                             <span v-if="param.canModify">
-                                <el-input v-model="param.value"/>
+                                <span v-if="param.type === 'string'">
+                                    <el-input v-model="param.value"/>
+                                </span>
+                                <span v-else="">
+                                   <el-input type="textarea" v-model="param.value" rows="15"/>
+                                </span>
                             </span>
                             <span v-else>
                                 <label>${param.value}</label>
                             </span>
                         </el-col>
-                        <el-col :span="5" v-if="param.canModify" style="margin-left: 20px">
+                        <el-col :span="4" v-if="param.canModify" style="margin-left: 20px">
                             <el-select v-model="param.type" placeholder="参数类型">
                                 <el-option label="string" value="string"></el-option>
                                 <el-option label="json" value="json"></el-option>
                             </el-select>
                         </el-col>
-                        <el-col :span="8" v-if="param.canModify" style="margin-left: 10px">
+                        <el-col :span="4" v-if="param.canModify" style="margin-left: 10px">
                             <el-button type="danger" @click="removeInstantiateFormParam(param)">删除</el-button>
                         </el-col>
                     </el-form-item>
@@ -136,7 +141,7 @@
                         </el-col>
                     </el-form-item>
                     <el-form-item label="链码方法名：">
-                        <el-col :span="8">
+                        <el-col :span="12">
                             <el-input v-model="invokeForm.function_name"></el-input>
                         </el-col>
                     </el-form-item>

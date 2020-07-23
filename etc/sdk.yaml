@@ -105,7 +105,7 @@ channels:
         # [Optional]. will this peer be the target of the SDK's listener registration? All peers can
         # produce events but the app typically only needs to connect to one to listen to events.
         # Default: true
-        eventSource: true
+        eventSource: false
 
     # [Optional]. The application can use these options to perform channel operations like retrieving channel
     # config etc.
@@ -185,7 +185,6 @@ peers:
     # 表明使用grpcs协议，设置IP和端口号，使用域名会无法连接
     # url: grpcs://peer0.org1.example.com:7051
     url: localhost:7051
-    eventUrl: localhost:7053
 
     grpcOptions:
       ssl-target-name-override: peer0.org1.example.com
@@ -201,16 +200,15 @@ peers:
       # Certificate location absolute path
       path: /Users/test01/gomod/devplat/deploy/crypto-config/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
 
-entitymatchers:
-  peer:
-    - pattern: (\w*)peer0.org1.example.com(\w*)
-      urlsubstitutionexp: localhost:7051
-      eventUrlSubstitutionExp: localhost:7053
-      ssltargetoverrideurlsubstitutionexp: peer0.org1.example.com
-      mappedhost: peer0.org1.example.com
-
-  orderer:
-    - pattern: (\w*)orderer.example.com(\w*)
-      urlsubstitutionexp: localhost:7050
-      ssltargetoverrideurlsubstitutionexp: orderer.example.com
-      mappedhost: orderer.example.com
+#entitymatchers:
+#  peer:
+#    - pattern: (\w*)peer0.org1.example.com(\w*)
+#      urlsubstitutionexp: localhost:7051
+#      ssltargetoverrideurlsubstitutionexp: peer0.org1.example.com
+#      mappedhost: peer0.org1.example.com
+#
+#  orderer:
+#    - pattern: (\w*)orderer.example.com(\w*)
+#      urlsubstitutionexp: localhost:7050
+#      ssltargetoverrideurlsubstitutionexp: orderer.example.com
+#      mappedhost: orderer.example.com
