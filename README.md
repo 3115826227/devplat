@@ -72,7 +72,9 @@ docker pull hyperledger/fabric-peer:latest
 # 进入devplat/deploy/chaincode/example02
 go mod init example02  # 使用go mod初始化项目，名称为example02
 go mod tidy            # 拉取相关依赖
+
 ```
+
 
 
 > 在执行go mod tidy的时候，可能会出现依赖冲突，如下图所示
@@ -95,6 +97,8 @@ go build
 # CORE_CHAINCODE_ID_NAME参数：设置链码名称以及版本，中间使用冒号分割，可随意指定
 CORE_PEER_ADDRESS=localhost:7052 CORE_CHAINCODE_ID_NAME=example02:1.0 ./example02
 ```
+
+
 
 > 执行example02链码的时候需要保证环境是正常启动的，否则会因为连接不上peer节点，结束运行
 
