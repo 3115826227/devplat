@@ -72,7 +72,6 @@ docker pull hyperledger/fabric-peer:latest
 # 进入devplat/deploy/chaincode/example02
 go mod init example02  # 使用go mod初始化项目，名称为example02
 go mod tidy            # 拉取相关依赖
-
 ```
 
 
