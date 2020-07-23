@@ -46,7 +46,7 @@ func InvokeChaincodeHandle(c *gin.Context) {
 		}
 	}
 	var cfg = config.Config
-	payload, err := app.QueryCCRequest(cfg.ChannelName, req.Name, req.FunctionName, args)
+	payload, err := app.InvokeCCRequest(cfg.ChannelName, req.Name, req.FunctionName, args)
 	if err != nil {
 		log.Logger.Error(err.Error())
 		ErrorResp(c, err.Error())
