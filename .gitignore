@@ -2,3 +2,8 @@
 main
 deploy/chaincode/*
 vendor/
+deploy/channel-artifacts/*
+deploy/crypto-config/*
+deploy/org3
+deploy/scripts
+deploy/docker-compose
