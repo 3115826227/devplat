@@ -67,11 +67,13 @@ docker pull hyperledger/fabric-peer:latest
 
 * 使用go mod管理example02
 
+
 ```shell  
 # 进入devplat/deploy/chaincode/example02
 go mod init example02  # 使用go mod初始化项目，名称为example02
 go mod tidy            # 拉取相关依赖
 ```
+
 
 > 在执行go mod tidy的时候，可能会出现依赖冲突，如下图所示
 
