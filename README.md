@@ -15,7 +15,7 @@
 * 拉取分支代码
 
 ```shell
-git clone http://192.168.9.251/feizhaohui/devplat.git
+git clone https://github.com/3115826227/devplat.git
 ```
 
 * 进入项目执行
